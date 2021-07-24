@@ -6,3 +6,4 @@ tango.stamp
 #Added by cargo
 
 /target
+.idea/
