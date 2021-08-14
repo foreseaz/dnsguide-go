@@ -1,62 +1,87 @@
 package dns
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBytePackBuffer(t *testing.T) {
-	var testBuffer = NewBuffer()
+	var buf [BUFFER_SIZE]byte
+	var emptyBuf = NewBuffer(buf)
+
+	for i := 0; i < 512; i++ {
+		buf[i] = byte(i)
+	}
+	var seqBuf = NewBuffer(buf)
 
 	t.Run("New", func(t *testing.T) {
-		var buf [512]byte
+		var buf [BUFFER_SIZE]byte
 		expected := &BytePacketBuffer{
 			buf: &buf,
 			pos: 0,
 		}
-		actual := NewBuffer()
+		actual := NewBuffer(buf)
 
 		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("Position", func(t *testing.T) {
 		var expected uint = 0
-		actual := testBuffer.Position()
+		actual := emptyBuf.Position()
 		assert.Equal(t, expected, actual)
 	})
 
 	t.Run("Step", func(t *testing.T) {
-		testBuffer.Step(10)
-		var expected = testBuffer.Position()
+		emptyBuf.Step(10)
+		var expected = emptyBuf.Position()
 		assert.Equal(t, expected, uint(10))
 
-		testBuffer.Step(1)
-		assert.Equal(t, testBuffer.Position(), uint(11))
+		emptyBuf.Step(1)
+		assert.Equal(t, emptyBuf.Position(), uint(11))
 	})
 
 	t.Run("Seek", func(t *testing.T) {
-		testBuffer.Seek(0)
-		assert.Equal(t, testBuffer.Position(), uint(0))
+		emptyBuf.Seek(0)
+		assert.Equal(t, emptyBuf.Position(), uint(0))
 	})
 
 	t.Run("Read", func(t *testing.T) {
-		bb, err := testBuffer.Read()
+		bb, err := emptyBuf.Read()
 		assert.Equal(t, nil, err)
 		assert.Equal(t, byte(0), bb)
 
-		testBuffer.Seek(BUFFER_SIZE)
-		bb, err = testBuffer.Read()
+		emptyBuf.Seek(BUFFER_SIZE)
+		bb, err = emptyBuf.Read()
 		assert.NotNil(t, err)
 		assert.Equal(t, byte(0), bb)
 	})
 
 	t.Run("Get", func(t *testing.T) {
-		bb, err := testBuffer.Get(10)
+		bb, err := emptyBuf.Get(10)
 		assert.Nil(t, err)
 		assert.Equal(t, byte(0), bb)
 
-		bb, err = testBuffer.Get(1000)
+		bb, err = emptyBuf.Get(1000)
 		assert.NotNil(t, err)
 		assert.Equal(t, byte(0), bb)
+	})
+
+	t.Run("GetRange", func(t *testing.T) {
+		bbs, err := seqBuf.GetRange(10, 2)
+		assert.Nil(t, err)
+		assert.Equal(t, []byte{10, 11}, bbs)
+	})
+
+	t.Run("Read2Bytes", func(t *testing.T) {
+		bbs, err := seqBuf.Read2Bytes()
+		assert.Nil(t, err)
+		assert.Equal(t, []byte{0, 1}, bbs)
+	})
+
+	t.Run("Read4Bytes", func(t *testing.T) {
+		bbs, err := seqBuf.Read4Bytes()
+		assert.Nil(t, err)
+		assert.Equal(t, []byte{2, 3, 4, 5}, bbs)
 	})
 }
